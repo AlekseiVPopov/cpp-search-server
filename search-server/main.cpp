@@ -24,6 +24,21 @@ int ReadLineWithNumber() {
     return result;
 }
 
+vector<int> ReadIntLineWithNumber() {
+    int size = 0;
+    int val = 0;
+    vector<int> result = {};
+    cin >> size;
+    if (size > 0) {
+        for (int i = 0; i < size && !cin.eof(); i++) {
+            cin >> val;
+            result.push_back(val);
+        }
+    }
+    ReadLine();
+    return result;
+}
+
 vector<string> SplitIntoWords(const string &text) {
     vector<string> words;
     string word;
@@ -44,27 +59,6 @@ vector<string> SplitIntoWords(const string &text) {
     return words;
 }
 
-vector<int> SplitIntoInts(const string &text) {
-    vector<string> int_strings;
-    vector<int> result;
-    string int_string;
-    for (const char c: text) {
-        if (c == ' ') {
-            if (!int_string.empty()) {
-                result.push_back(stoi(int_string));
-                int_string.clear();
-            }
-        } else {
-            int_string += c;
-        }
-    }
-    if (!int_string.empty()) {
-        result.push_back(stoi(int_string));
-    }
-
-    return result;
-}
-
 struct Document {
     int id;
     double relevance;
@@ -83,16 +77,16 @@ public:
         }
     }
 
-    void AddDocument(int document_id, const string &document, const vector <int> &ratings) {
+    void AddDocument(int document_id, const string &document, const vector<int> &ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
         int rating = ComputeAverageRating(ratings);
         if (!words.empty()) {
             for (const string &word: words) {
                 index_[word][document_id] += 1.0 / words.size();
-                documents_rating_.insert({document_id, rating});
             }
-            ++document_count_;
+            documents_rating_.insert({document_id, rating});
         }
+        ++document_count_;
     }
 
     vector<Document> FindTopDocuments(const string &raw_query) const {
@@ -119,15 +113,14 @@ public:
     int ComputeAverageRating(const vector<int> &ratings) const {
         int rating = 0;
         int size = ratings.size();
-
-        if (size) {
-            count_if(ratings.begin(), ratings.end(), [&rating](const int &i) {
-                rating += i;
-                return true;
-            });
-            rating = round(1.0 * rating / size);
+        if (!size) {
+            return rating;
         }
-        return rating;
+        for (int r: ratings) {
+            rating += r;
+        }
+
+        return rating / size;
     }
 
     int GetDocumentRating(const int &id) const {
@@ -203,8 +196,8 @@ private:
             if (index_.count(word)) {
 
                 double idf = log(1.0 * document_count_ / index_.at(word).size());
-                for (const auto [id, df]: index_.at(word)) {
-                    matched_documents[id] += idf * df;
+                for (const auto &[id, tf]: index_.at(word)) {
+                    matched_documents[id] += idf * tf;
                 }
             }
         }
@@ -234,15 +227,12 @@ SearchServer CreateSearchServer() {
 
     const int document_count = ReadLineWithNumber();
     string document, rating_string;
-    vector <int> ratings;
+    vector<int> ratings;
 
     for (int document_id = 0; document_id < document_count; ++document_id) {
         ratings.clear();
         document = ReadLine();
-        rating_string = ReadLine();
-        if (!rating_string.empty()) {
-            ratings = SplitIntoInts(rating_string);
-        }
+        ratings = ReadIntLineWithNumber();
         search_server.AddDocument(document_id, document, ratings);
     }
     return search_server;
