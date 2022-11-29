@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 using namespace std;
 
@@ -77,7 +78,6 @@ public:
     }
 
     template<typename P>
-
     vector<Document> FindTopDocuments(const string &raw_query, P pred) const {
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, pred);
@@ -160,10 +160,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating: ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -210,34 +207,12 @@ private:
 
 
     vector<Document> FindAllDocuments(const Query &query, DocumentStatus status = DocumentStatus::ACTUAL) const {
-        vector<Document> result;
-
-        switch (status) {
-            case DocumentStatus::ACTUAL:
-                result = FindAllDocuments(query, [](int document_id, DocumentStatus status, int rating) {
-                    return status == DocumentStatus::ACTUAL;
-                });
-                break;
-            case DocumentStatus::BANNED:
-                result = FindAllDocuments(query, [](int document_id, DocumentStatus status, int rating) {
-                    return status == DocumentStatus::BANNED;
-                });
-                break;
-            case DocumentStatus::IRRELEVANT:
-                result = FindAllDocuments(query, [](int document_id, DocumentStatus status, int rating) {
-                    return status == DocumentStatus::IRRELEVANT;
-                });
-                break;
-            case DocumentStatus::REMOVED:
-                result = FindAllDocuments(query, [](int document_id, DocumentStatus status, int rating) {
-                    return status == DocumentStatus::REMOVED;
-                });
-        }
-        return result;
+        return FindAllDocuments(query, [status](int document_id, DocumentStatus ds, int rating) {
+            return status == ds;
+        });
     }
 
     template<typename P>
-
     vector<Document> FindAllDocuments(const Query &query, P pred) const {
         map<int, double> document_to_relevance;
         for (const string &word: query.plus_words) {
