@@ -245,7 +245,6 @@ private:
 };
 
 
-
 void PrintMatchDocumentResult(int document_id, const vector<string> &words, DocumentStatus status) {
     cout << "{ "s
          << "document_id = "s << document_id << ", "s
@@ -306,7 +305,6 @@ ostream &operator<<(ostream &os, const set<T> &s) {
     }
     return os;
 }
-
 
 
 template<typename K, typename V>
@@ -391,9 +389,8 @@ void ASSERTImpl(bool value, const string &expr_str, const string &file, const st
 
 #define ASSERT_HINT(expr, hint) ASSERTImpl(!!(expr), #expr, __FILE__, __FUNCTION__, __LINE__, (hint))
 
-template <typename F>
-void RunTestImpl(F func, const string& s) {
-    /* Напишите недостающий код */
+template<typename F>
+void RunTestImpl(F func, const string &s) {
     func();
     cerr << s << " OK" << endl;
 }
@@ -413,7 +410,7 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         const auto found_docs = server.FindTopDocuments("in"s);
         ASSERT_EQUAL(found_docs.size(), 1u);
-        const Document& doc0 = found_docs[0];
+        const Document &doc0 = found_docs[0];
         ASSERT_EQUAL(doc0.id, doc_id);
     }
 
@@ -537,27 +534,67 @@ void TestSortAndRelevanceAndSearch() {
     search_server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
     search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
     search_server.AddDocument(3, "ухоженный скворец евгений"s, DocumentStatus::BANNED, {9});
+    search_server.AddDocument(4, "пушистый ухоженный кот"s, DocumentStatus::IRRELEVANT, {2, 3, 5, 1});
+    search_server.AddDocument(5, "кот"s, DocumentStatus::REMOVED, {3, 2, 1, 8, -7});
+    search_server.AddDocument(6, "пушистый кот"s, DocumentStatus::ACTUAL, {6, 5, 2});
+    search_server.AddDocument(7, "ухоженный кот"s, DocumentStatus::ACTUAL, {0});
     {
         const auto found_docs = search_server.FindTopDocuments("пушистый ухоженный кот"s);
 
-        ASSERT(found_docs.size() == 3);
+        ASSERT(found_docs.size() == MAX_RESULT_DOCUMENT_COUNT); //Check limit
         const Document &doc0 = found_docs[0];
         const Document &doc1 = found_docs[1];
         const Document &doc2 = found_docs[2];
-        ASSERT(doc0.id == 1);
-        ASSERT(doc1.id == 0);
-        ASSERT(doc2.id == 2);
-        ASSERT(doc0.relevance - 0.866434 <= EPSILON);
-        ASSERT(doc1.relevance - 0.173287 <= EPSILON);
-        ASSERT(doc2.relevance - 0.173287 <= EPSILON);
-        ASSERT(doc0.rating == 5);
-        ASSERT(doc1.rating == 2);
-        ASSERT(doc2.rating == -1);
+        const Document &doc3 = found_docs[3];
+        const Document &doc4 = found_docs[4];
+        /* check found id are right */
+        ASSERT(doc0.id == 6);
+        ASSERT(doc1.id == 1);
+        ASSERT(doc2.id == 7);
+        ASSERT(doc3.id == 2);
+        ASSERT(doc4.id == 0);
+        /* check found relevance is right */
+        ASSERT(doc0.relevance - 0.634255 <= EPSILON);
+        ASSERT(doc1.relevance - 0.562335 <= EPSILON);
+        ASSERT(doc2.relevance - 0.490414 <= EPSILON);
+        ASSERT(doc3.relevance - 0.173286 <= EPSILON);
+        ASSERT(doc4.relevance - 0.071920 <= EPSILON);
+        /* check sort order is right */
+        ASSERT(doc0.relevance >= doc1.relevance);
+        ASSERT(doc1.relevance >= doc2.relevance);
+        ASSERT(doc2.relevance >= doc3.relevance);
+        ASSERT(doc3.relevance >= doc4.relevance);
+        /* check found rating is right */
+        ASSERT(doc0.rating == 4);
+        ASSERT(doc1.rating == 5);
+        ASSERT(doc2.rating == 0);
+        ASSERT(doc3.rating == -1);
+        ASSERT(doc4.rating == 2);
     }
+    /* check status filter work*/
     {
+
         const auto found_docs = search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED);
         const Document &doc0 = found_docs[0];
         ASSERT(doc0.id == 3);
+    }
+    {
+        const auto found_docs = search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::IRRELEVANT);
+        const Document &doc0 = found_docs[0];
+        ASSERT(doc0.id == 4);
+    }
+    {
+        const auto found_docs = search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::REMOVED);
+        const Document &doc0 = found_docs[0];
+        ASSERT(doc0.id == 5);
+    }
+    {
+        const auto ds = DocumentStatus::IRRELEVANT;
+        const auto found_docs = search_server.FindTopDocuments("пушистый ухоженный кот"s, [ds](int document_id, DocumentStatus status, int rating) {
+            return status == ds;
+        });
+        const Document &doc0 = found_docs[0];
+        ASSERT(doc0.id == 4);
     }
 }
 /*
