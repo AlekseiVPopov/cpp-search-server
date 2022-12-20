@@ -4,9 +4,7 @@
 #include <map>
 #include <set>
 #include <string>
-#include <utility>
 #include <vector>
-#include <optional>
 
 using namespace std;
 
@@ -103,9 +101,7 @@ public:
 
     int GetDocumentId(int index) const {
         if (index >= 0 && index < GetDocumentCount()) {
-            auto it = documents_.begin();
-            advance(it, index);
-            return it->first;
+            return document_ids_[index];
         } else {
             throw out_of_range("Can`t get Document ID - ID is out of range");
         }
@@ -121,24 +117,17 @@ public:
             throw invalid_argument("Document ID < 0"s);
         }
 
-        if (count_if(documents_.begin(),
-                     documents_.end(),
-                     [document_id](const auto &document) { return document.first == document_id; }) > 0) {
+        if (documents_.count(document_id) > 0) {
             throw invalid_argument("Document ID "s + to_string(document_id) + " is in use already"s);
         }
 
-
         const vector<string> words = SplitIntoWordsNoStop(document);
-        if (count_if(words.begin(),
-                     words.end(),
-                     [](const auto &word) { return !IsValidWord(word); }) > 0) {
-            throw invalid_argument("Illegal symbols in document with ID "s + to_string(document_id));
-        }
         const double inv_word_count = 1.0 / words.size();
         for (const string &word: words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
+        document_ids_.push_back(document_id);
 
     }
 
@@ -146,23 +135,13 @@ public:
     vector<Document>
     FindTopDocuments(const string &raw_query, DocumentPredicate document_predicate) const {
         vector<Document> result = {};
-        if (IsValidWord(raw_query) == false) {
-            throw invalid_argument("Illegal symbols in query"s);
-        }
-
-        for (int i = 0, j = i + 1; j < raw_query.size(); ++i, ++j) {
-            if (((raw_query[i] == '-') && (raw_query[j] == '-' || raw_query[j] == '\t')) ||
-                ((j == raw_query.size() - 1) && raw_query[j] == '-')) {
-                throw invalid_argument("Query have wrong format"s);
-            }
-        }
 
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document &lhs, const Document &rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                 if (abs(lhs.relevance - rhs.relevance) < MAX_RESULT_DOCUMENT_COUNT) {
                      return lhs.rating > rhs.rating;
                  } else {
                      return lhs.relevance > rhs.relevance;
@@ -192,16 +171,6 @@ public:
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string &raw_query, int document_id) const {
-        if (IsValidWord(raw_query) == false) {
-            throw invalid_argument("Illegal symbols in query"s);
-        }
-
-        for (int i = 0, j = i + 1; j < raw_query.size(); ++i, ++j) {
-            if (((raw_query[i] == '-') && (raw_query[j] == '-' || raw_query[j] == '\t')) ||
-                ((j == raw_query.size() - 1) && raw_query[j] == '-')) {
-                throw invalid_argument("Query have wrong format"s);
-            }
-        }
         const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
         for (const string &word: query.plus_words) {
@@ -233,6 +202,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
+    vector<int> document_ids_;
 
     bool IsStopWord(const string &word) const {
         return stop_words_.count(word) > 0;
@@ -241,6 +211,10 @@ private:
     vector<string> SplitIntoWordsNoStop(const string &text) const {
         vector<string> words;
         for (const string &word: SplitIntoWords(text)) {
+            if (!IsValidWord(text)) {
+                throw invalid_argument("Illegal character in stop word "s + text);
+            }
+            throw invalid_argument("");
             if (!IsStopWord(word)) {
                 words.push_back(word);
             }
@@ -268,9 +242,15 @@ private:
     QueryWord ParseQueryWord(string text) const {
         bool is_minus = false;
         // Word shouldn't be empty
-        if (text[0] == '-') {
+
+        if (text[0] == '-' && text.length() > 1 && text[1] != '-') {
             is_minus = true;
             text = text.substr(1);
+            if (!IsValidWord(text)) {
+                throw invalid_argument("Illegal symbols in query"s);
+            }
+        } else {
+            throw invalid_argument("Query have wrong format"s);
         }
         return {text, is_minus, IsStopWord(text)};
     }
@@ -282,6 +262,7 @@ private:
 
     Query ParseQuery(const string &text) const {
         Query query;
+
         for (const string &word: SplitIntoWords(text)) {
             const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
