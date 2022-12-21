@@ -105,7 +105,6 @@ public:
         } else {
             throw out_of_range("Can`t get Document ID - ID is out of range");
         }
-        return INVALID_DOCUMENT_ID;
     }
 
     void AddDocument(int document_id,
@@ -212,9 +211,8 @@ private:
         vector<string> words;
         for (const string &word: SplitIntoWords(text)) {
             if (!IsValidWord(text)) {
-                throw invalid_argument("Illegal character in stop word "s + text);
+                throw invalid_argument("Illegal character in word "s + text);
             }
-            throw invalid_argument("");
             if (!IsStopWord(word)) {
                 words.push_back(word);
             }
@@ -243,14 +241,20 @@ private:
         bool is_minus = false;
         // Word shouldn't be empty
 
-        if (text[0] == '-' && text.length() > 1 && text[1] != '-') {
-            is_minus = true;
-            text = text.substr(1);
+        if (text[0] == '-') {
+            if (text.length() > 1 && text[1] != '-') {
+                is_minus = true;
+                text = text.substr(1);
+                if (!IsValidWord(text)) {
+                    throw invalid_argument("Illegal symbols in query"s);
+                }
+            } else {
+                throw invalid_argument("Query have wrong format"s);
+            }
+        } else {
             if (!IsValidWord(text)) {
                 throw invalid_argument("Illegal symbols in query"s);
             }
-        } else {
-            throw invalid_argument("Query have wrong format"s);
         }
         return {text, is_minus, IsStopWord(text)};
     }
