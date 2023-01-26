@@ -2,13 +2,13 @@
 #include <string>
 
 #include "read_input_functions.h"
-#include "string_processing.h"
-#include "document.h"
 #include "search_server.h"
+#include "document.h"
 #include "paginator.h"
 #include "request_queue.h"
 
 using namespace std;
+
 void PrintDocument(const Document &document) {
     cout << "{ "s
          << "document_id = "s << document.id << ", "s
@@ -80,6 +80,6 @@ int main() {
     request_queue.AddFindRequest("big collar"s);
     // первый запрос удален, 1437 запросов с нулевым результатом
     request_queue.AddFindRequest("sparrow"s);
-    cout << "Total empty requests: "s << request_queue.GetNoResultRequests() << endl;
+    std::cout << "Total empty requests: "s << request_queue.GetNoResultRequests() << std::endl;
     return 0;
 }

@@ -90,9 +90,7 @@ int SearchServer::ComputeAverageRating(const std::vector<int> &ratings) {
         return 0;
     }
     int rating_sum = 0;
-    for (const int rating: ratings) {
-        rating_sum += rating;
-    }
+    rating_sum = std::accumulate(ratings.begin(), ratings.end(), 0);
     return rating_sum / static_cast<int>(ratings.size());
 }
 
