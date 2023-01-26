@@ -1,0 +1,3 @@
+C:/Users/Alex/Documents/Yandex_P/cpp-search-server/cmake-build-debug/CMakeFiles/cpp_search_server.dir
+C:/Users/Alex/Documents/Yandex_P/cpp-search-server/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Alex/Documents/Yandex_P/cpp-search-server/cmake-build-debug/CMakeFiles/rebuild_cache.dir
