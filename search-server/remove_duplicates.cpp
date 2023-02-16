@@ -1,27 +1,24 @@
 #include "remove_duplicates.h"
 
 void RemoveDuplicates(SearchServer &search_server) {
-    std::map<std::string, double> freq_map;
-    std::vector<std::pair<int, std::vector<std::string>>> all_document_struct;
+    std::vector<int> duplicates_ids;
+    std::set<std::set<std::string>> all_document_struct;
 
     for (const int document_id: search_server) {
-        std::vector<std::string> key_words;  // только слова документа без id
+        std::set<std::string> key_words;
         std::map<std::string, double> id_freq = search_server.GetWordFrequencies(document_id);
         for (std::map<std::string, double>::iterator it = id_freq.begin(); it != id_freq.end(); ++it) {
-            key_words.push_back(it->first);
+            key_words.insert(it->first);
         }
-        all_document_struct.push_back(
-                std::make_pair(document_id, key_words));
+        if (all_document_struct.count(key_words) == 0) {
+            all_document_struct.insert(key_words);
+        } else {
+            std::cout << "Found duplicate document id " << document_id << std::endl;
+            duplicates_ids.push_back(document_id);
+        }
     }
 
-    for (auto i = 0; i < (int) all_document_struct.size() - 1; ++i) {
-        for (auto j = i + 1; j < (int) all_document_struct.size(); ++j) {
-            if (all_document_struct[i].second == all_document_struct[j].second) {
-                std::cout << "Found duplicate document id " << all_document_struct[j].first << std::endl;
-                search_server.RemoveDocument(all_document_struct[j].first);
-                all_document_struct.erase(all_document_struct.begin() + j);
-                j--;
-            }
-        }
+    for (auto document_id : duplicates_ids) {
+        search_server.RemoveDocument(document_id);  // удаляю документ)
     }
 }

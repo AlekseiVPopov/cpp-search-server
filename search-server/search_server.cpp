@@ -149,16 +149,16 @@ std::vector<int>::iterator SearchServer::end(){
 
 void SearchServer::RemoveDocument(int document_id)
 {
-    SearchServer::documents_.erase(document_id);
-    SearchServer::document_to_word_freqs.erase(document_id);
-    //SearchServer::document_ids_.erase(std::remove(document_ids_.begin(), document_ids_.end(), document_id), document_ids_.end());
-    for (auto i :SearchServer::word_to_document_freqs_)
+    documents_.erase(document_id);
+    document_to_word_freqs.erase(document_id);
+
+    for (auto word :SearchServer::word_to_document_freqs_)
     {
-        auto s = i.second;
-        bool w = s.count(document_id);
-        if(w)
+        auto word_freq_map = word.second;
+        bool is_document_present = word_freq_map.count(document_id);
+        if(is_document_present)
         {
-            s.erase(document_id);
+            word_freq_map.erase(document_id);
         }
     }
 }
