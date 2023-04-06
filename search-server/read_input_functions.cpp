@@ -2,7 +2,7 @@
 
 std::string ReadLine() {
     std::string s;
-    getline(std::cin, s);
+    std::getline(std::cin, s);
     return s;
 }
 
