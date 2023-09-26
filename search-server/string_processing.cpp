@@ -1,8 +1,9 @@
+#include <cstdint>
 #include "string_processing.h"
 
 std::vector<std::string_view> SplitIntoWords(std::string_view str) {
     std::vector<std::string_view> result;
-    const uint64_t pos_end = str.npos;
+    const uint64_t pos_end = std::string_view::npos;
 
     while (true) {
         uint64_t space = str.find(' ');

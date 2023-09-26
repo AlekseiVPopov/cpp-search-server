@@ -17,4 +17,4 @@ add_executable(cpp_search_server
         search-server/search_server.cpp
         search-server/search_server.h
         search-server/string_processing.cpp
-        search-server/string_processing.h search-server/remove_duplicates.cpp)
+        search-server/string_processing.h search-server/remove_duplicates.cpp search-server/test_example_functions.cpp search-server/process_queries.cpp)

@@ -172,7 +172,7 @@ std::vector<Document> SearchServer::FindTopDocuments(ExecutionPolicy &&policy, c
 template<class ExecutionPolicy, class DocumentPredicate>
 std::vector<Document> SearchServer::FindTopDocuments(ExecutionPolicy &&policy, const std::string_view raw_query,
                                                      DocumentPredicate document_predicate) const {
-    const auto query = ParseQuery(static_cast<std::string>(raw_query));
+    const auto query = ParseQuery(raw_query);
     auto matched_documents = FindAllDocuments(policy, query, document_predicate);
     sort(policy, matched_documents.begin(), matched_documents.end(), [](const Document &lhs, const Document &rhs) {
         if (std::abs(lhs.relevance - rhs.relevance) < EPSILON) {

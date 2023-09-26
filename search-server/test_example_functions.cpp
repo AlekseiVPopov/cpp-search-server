@@ -520,7 +520,7 @@ void TestBeginEndSearchServer() {
     server.AddDocument(1, "пушистый кот пушистый хвост"s, DocumentStatus::ACTUAL, {7, 2, 7});
     server.AddDocument(3, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {0});
 
-    vector<int> document_ids = {16, 1, 3};
+    vector<int> document_ids = {1, 3, 16};
     vector<int> result;
 
     for (const auto id: server) {
